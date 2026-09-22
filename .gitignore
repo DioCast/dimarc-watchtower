@@ -1,0 +1,18 @@
+# 1. Operating System Files
+.DS_Store
+
+# 2. Python Environment & Compilation
+.venv/
+__pycache__/
+*.pyc
+
+# 3. Editor & IDE Settings
+.vscode/
+
+# 4. Data & Secrets
+*.csv
+.env
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
