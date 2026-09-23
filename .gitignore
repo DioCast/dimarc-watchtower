@@ -11,7 +11,10 @@ __pycache__/
 
 # 4. Data & Secrets
 *.csv
+*.geojson
+*.ndjson
 .env
+
 # Terraform
 .terraform/
 *.tfstate
