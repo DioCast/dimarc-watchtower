@@ -9,7 +9,8 @@ mcp = FastMCP("DiMarC WatchTower")
 
 # 2. Infrastructure Setup
 PROJECT_ID = os.getenv("PROJECT_ID", "dimarc-watchtower-01")
-BQ_DATASET = os.getenv("BQ_DATASET", "dwt_analytics_wildfire")
+BQ_DATASET_RAW = os.getenv("BQ_DATASET_RAW", "dwt_raw")
+BQ_DATASET_ANALYTICS_WILDFIRE = os.getenv("BQ_DATASET_ANALYTICS_WILDFIRE", "dwt_analytics_wildfire")
 
 try:
     bq_client = bigquery.Client(project=PROJECT_ID)
@@ -26,9 +27,9 @@ def get_watchtower_status() -> str:
             query = "SELECT 1"
             query_job = bq_client.query(query)
             query_job.result()
-            status_msg += f"✅ Geospatial Database ({BQ_DATASET}): CONNECTED"
+            status_msg += f"✅ Analytics Wildfire Geospatial Database ({BQ_DATASET_ANALYTICS_WILDFIRE}): CONNECTED"
         except Exception as e:
-            status_msg += f"🔴 Geospatial Database Error: {str(e)}"
+            status_msg += f"🔴 Analytics Wildfire Geospatial Database Error: {str(e)}"
     else:
         status_msg += "⚪ Database Client not initialized"
     return status_msg
@@ -77,18 +78,18 @@ def get_wildfires_near_coordinates(
             CASE 
                 WHEN EXISTS (
                     SELECT 1 
-                    FROM `dimarc-watchtower-01.{BQ_DATASET}.urban_areas` u
+                    FROM `dimarc-watchtower-01.{BQ_DATASET_ANALYTICS_WILDFIRE}.urban_areas` u
                     WHERE ST_Intersects(location_geog, u.urban_area_geom)
                 ) AND radiative_power_mw < 2.0 THEN 'Probable Industrial/Urban Anomaly'
                 WHEN EXISTS (
                     SELECT 1 
-                    FROM `dimarc-watchtower-01.{BQ_DATASET}.nifc_fire_perimeters` p
+                    FROM `dimarc-watchtower-01.{BQ_DATASET_ANALYTICS_WILDFIRE}.nifc_fire_perimeters` p
                     WHERE ST_Intersects(location_geog, p.perimeter_geog)
                 ) THEN 'Wildfire Threat (Reburn)'
                 ELSE 'Wildfire Threat (Virgin Fuel)'
             END AS classification
         FROM
-            `dimarc-watchtower-01.{BQ_DATASET}.wildfire_hotspots`
+            `dimarc-watchtower-01.{BQ_DATASET_ANALYTICS_WILDFIRE}.wildfire_hotspots`
         WHERE
             ST_DWITHIN(location_geog, ST_GEOGPOINT(@user_lon, @user_lat), @radius_meters)
         ORDER BY
@@ -150,7 +151,7 @@ def get_historical_fire_context(
             agency,
             ROUND(ST_DISTANCE(perimeter_geog, ST_GEOGPOINT(@user_lon, @user_lat)) / 1000.0, 2) AS distance_km
         FROM
-            `dimarc-watchtower-01.{BQ_DATASET}.nifc_fire_perimeters`
+            `dimarc-watchtower-01.{BQ_DATASET_ANALYTICS_WILDFIRE}.nifc_fire_perimeters`
         WHERE
             ST_DWITHIN(perimeter_geog, ST_GEOGPOINT(@user_lon, @user_lat), @radius_meters)
         ORDER BY
